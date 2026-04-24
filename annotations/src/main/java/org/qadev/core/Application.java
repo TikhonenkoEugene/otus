@@ -13,12 +13,12 @@ import java.util.List;
 public class Application {
     private final static String LINE = "--------------------------------------";
     private final Class<?>[] classArr;
-    int allTestsCounter;
+    int passedTestsCounter;
     int failTestsCounter;
 
     public Application(Class<?>... classArr) {
         this.classArr = classArr;
-        this.allTestsCounter = 0;
+        this.passedTestsCounter = 0;
         this.failTestsCounter = 0;
     }
 
@@ -31,59 +31,79 @@ public class Application {
         printCountedTests();
     }
 
-    private List<Method> getAllMethodsOrdered(Class<?> clazz) {
-        List<Method> beforeMethods = new ArrayList<>();
-        List<Method> testMethods = new ArrayList<>();
-        List<Method> afretMethods = new ArrayList<>();
-        Method[] methods = clazz.getDeclaredMethods();
-        for (Method method : methods) {
-            if (method.isAnnotationPresent(Before.class)) {
-                beforeMethods.add(method);
-            }
-            else if (method.isAnnotationPresent(Test.class)) {
-                testMethods.add(method);
-            }
-            else if (method.isAnnotationPresent(After.class)) {
-                afretMethods.add(method);
-            }
-        }
-        List<Method> allMethods = new ArrayList<>();
-        allMethods.addAll(beforeMethods);
-        allMethods.addAll(testMethods);
-        allMethods.addAll(afretMethods);
-        return allMethods;
-    }
-
     private void executeClass(Class<?> clazz) throws NoSuchMethodException, InvocationTargetException,
             InstantiationException, IllegalAccessException {
-        List<Method> classMethods = getAllMethodsOrdered(clazz);
+        List<Method> testMethods = getTestMethods(clazz);
         System.out.println(clazz.getAnnotation(Suite.class).value());
         var instance = clazz.getConstructor().newInstance();
-        for (Method method : classMethods) {
+        for (Method method : testMethods) {
+            for (Method before : getBeforeMethods(clazz)) {
+                try {
+                    System.out.println(before.getAnnotation(Before.class).value());
+                    before.invoke(instance);
+                }
+                catch (Exception exception) {
+                    System.out.println("Exception in before: " + method.getName());
+                }
+            }
             try {
-                if (method.isAnnotationPresent(Before.class)) {
-                    System.out.println(method.getAnnotation(Before.class).value());
-                }
-                else if (method.isAnnotationPresent(Test.class)) {
-                    System.out.println(method.getAnnotation(Test.class).value());
-                    allTestsCounter++;
-                }
-                else if (method.isAnnotationPresent(After.class)) {
-                    System.out.println(method.getAnnotation(After.class).value());
-                }
+                System.out.println(method.getAnnotation(Test.class).value());
                 method.invoke(instance);
+                passedTestsCounter++;
             }
             catch (Exception exception) {
                 failTestsCounter++;
                 System.out.println("\u001B[31m" + "Result: Filed" + "\u001B[0m");
             }
+            for (Method after : getAfterMethods(clazz)) {
+                try {
+                    System.out.println(after.getAnnotation(After.class).value());
+                    after.invoke(instance);
+                }
+                catch (Exception exception) {
+                    System.out.println("Exception in after: " + method.getName());
+                }
+            }
         }
         System.out.println(LINE);
     }
 
+    private List<Method> getTestMethods(Class<?> clazz) {
+        List<Method> result = new ArrayList<>();
+        Method[] methods = clazz.getDeclaredMethods();
+        for (Method method : methods) {
+            if (method.isAnnotationPresent(Test.class)) {
+                result.add(method);
+            }
+        }
+        return result;
+    }
+
+    private List<Method> getBeforeMethods(Class<?> clazz) {
+        List<Method> result = new ArrayList<>();
+        Method[] methods = clazz.getDeclaredMethods();
+        for (Method method : methods) {
+            if (method.isAnnotationPresent(Before.class)) {
+                result.add(method);
+            }
+        }
+        return result;
+    }
+
+    private List<Method> getAfterMethods(Class<?> clazz) {
+        List<Method> result = new ArrayList<>();
+        Method[] methods = clazz.getDeclaredMethods();
+        for (Method method : methods) {
+            if (method.isAnnotationPresent(After.class)) {
+                result.add(method);
+            }
+        }
+        return result;
+    }
+
     private void printCountedTests() {
-        System.out.println("Total test:   " + allTestsCounter);
-        System.out.println("Passed test:  " + (allTestsCounter - failTestsCounter));
+        System.out.println("Total test:   " + (passedTestsCounter + failTestsCounter));
+        System.out.println("Passed test:  " + passedTestsCounter);
         System.out.println("Failed tests: " + failTestsCounter);
         System.out.println(LINE);
     }
