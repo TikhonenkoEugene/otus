@@ -1,12 +1,8 @@
 package org.qadev.task2;
 
 import java.util.ArrayList;
-import java.util.List;
 
-/**
- * Задание 2 где конвертируем массив в List
- * @param <T>
- */
+/*** Задание 2 где конвертируем массив в List */
 public class Converter<T> {
     private final T[] array;
 
@@ -14,10 +10,10 @@ public class Converter<T> {
         this.array = array;
     }
 
-    public List<T> convert() {
-        List<T> result = new ArrayList<>();
-        for (int i = 0; i < array.length; i++) {
-            result.add(array[i]);
+    public ArrayList<T> convert() {
+        ArrayList<T> result = new ArrayList<>();
+        for (T item : array) {
+            result.add(item);
         }
         return result;
     }
