@@ -13,4 +13,5 @@ plugins {
 rootProject.name = "homework"
 include("hw01-gradle")
 
+include("hw12-atm")
 include("hw15-patterns")
