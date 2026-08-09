@@ -14,3 +14,4 @@ rootProject.name = "homework"
 include("hw01-gradle")
 
 include("hw12-atm")
+include("hw16-serialization")
